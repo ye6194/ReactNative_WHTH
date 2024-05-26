@@ -1,16 +1,24 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput } from 'react-native';
-import { theme } from './colors';
-import { useState } from 'react';
-// TouchableOpacity - 누르는 요소를 투명하게 만듦
-// TouchableHighlight - 누르는 요소의 배경색을 바꿈
+import { StatusBar } from "expo-status-bar";
+import { StyleSheet, Text, View, TouchableOpacity, TextInput } from "react-native";
+import { theme } from "./colors";
+import { useState } from "react";
 
 export default function App() {
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
+  const [todos, setTodos] = useState({});
   const travel = () => setWorking(false);
   const work = () => setWorking(true);
   const onChangeText = (payload) => setText(payload);
+  const addTodo = () => {
+    if (text === "") {
+      return  // text가 비어있으면 아무것도 하지 않음
+    }
+    const newTodos = Object.assign({}, todos, { [Date.now()]: { text, work: working } });  // target은 비어있는 오브젝트
+    setTodos(newTodos);
+    setText("");
+  };
+  console.log(todos);
 
   return (
     <View style={styles.container}>
@@ -24,8 +32,14 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      <TextInput onChangeText={onChangeText} placeholder={working ? "할 일을 추가하세요." : "어디에 가고싶나요?"} style={styles.input} />
-
+      <TextInput
+        onSubmitEditing={addTodo}
+        onChangeText={onChangeText}
+        returnKeyType="done"
+        value={text}
+        placeholder={working ? "할 일을 추가하세요." : "어디에 가고싶나요?"}
+        style={styles.input}
+      />
     </View>
   );
 }
@@ -34,7 +48,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.bg,
-    paddingHorizontal: 20,  // 가로 방향으로 padding
+    paddingHorizontal: 20, // 가로 방향으로 padding
   },
   header: {
     flexDirection: "row",
@@ -44,7 +58,7 @@ const styles = StyleSheet.create({
   btnText: {
     color: "white",
     fontSize: 44,
-    fontWeight: "600"
+    fontWeight: "600",
   },
   input: {
     backgroundColor: "white",
@@ -52,6 +66,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 20,
     marginTop: 15,
-    fontSize: 16
-  }
+    fontSize: 16,
+  },
 });
