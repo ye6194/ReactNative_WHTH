@@ -1,25 +1,56 @@
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View, TouchableOpacity, TextInput, ScrollView } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useState } from "react";
 import { theme } from "./colors";
-import { useState } from "react";
+
+const STORAGE_KEY = "@todos";
 
 export default function App() {
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
   const [todos, setTodos] = useState({});
+
   const travel = () => setWorking(false);
   const work = () => setWorking(true);
   const onChangeText = (payload) => setText(payload);
-  const addTodo = () => {
-    if (text === "") {
-      return; // text가 비어있으면 아무것도 하지 않음
+
+  const saveTodos = async (toSave) => {  // toSave는 addTodo 함수를 통해 saveTodos에 전달됨
+    try {
+      const s = JSON.stringify(toSave)
+      await AsyncStorage.setItem(STORAGE_KEY, s);  // @는 데이터 키를 구분하고 네임스페이스를 관리하기 위한 관례적인 접두사(뜻x)
+    } catch (e) {
+      console.log("저장 실패", e);
     }
-    //const newTodos = Object.assign({}, todos, { [Date.now()]: { text, work: working } });  // target은 비어있는 오브젝트
-    const newTodos = { ...todos, [Date.now()]: { text, work: { working } } }; // 위 코드와 같은 코드
-    setTodos(newTodos);
-    setText("");
+  }
+  const loadTodos = async () => {
+    try {
+      const s = await AsyncStorage.getItem(STORAGE_KEY);
+      // console.log('저장된 내용', JSON.parse(s));
+      setTodos(JSON.parse(s));
+    } catch (e) {
+      console.log("저장된 내용 로드 실패", e);
+    }
+  }
+  const addTodo = async () => {
+    try {
+      if (text === "") {
+        return; // text가 비어있으면 아무것도 하지 않음
+      }
+      //const newTodos = Object.assign({}, todos, { [Date.now()]: { text, work: working } });  // target은 비어있는 오브젝트
+      const newTodos = { ...todos, [Date.now()]: { text, working } }; // 위 코드와 같은 코드
+      setTodos(newTodos);
+      await saveTodos(newTodos);
+      setText("");
+    } catch (e) {
+      console.log("입력 실패", e);
+    }
   };
-  console.log(todos);
+
+  useEffect(() => {
+    loadTodos();  // 컴포넌트가 마운트될 때 실행
+  }, []);
+  console.log("입력", todos);
 
   return (
     <View style={styles.container}>
@@ -42,11 +73,13 @@ export default function App() {
         style={styles.input}
       />
       <ScrollView>
-        {Object.keys(todos).map((key) => (
-          <View style={styles.todo} key={key}>
-            <Text style={styles.todoText}>{todos[key].text}</Text>
-          </View>
-        ))}
+        {Object.keys(todos).map((key) =>
+          todos[key].working === working ? (
+            <View style={styles.todo} key={key}>
+              <Text style={styles.todoText}>{todos[key].text}</Text>
+            </View>
+          ) : null
+        )}
       </ScrollView>
     </View>
   );
