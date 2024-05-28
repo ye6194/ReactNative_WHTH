@@ -1,11 +1,13 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, ScrollView } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, ScrollView, Alert } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Fontisto } from '@expo/vector-icons';
 import { useEffect, useState } from "react";
 import { theme } from "./colors";
 
 const STORAGE_KEY = "@todos";
 
+// 로딩할 때 indicator 표시
 export default function App() {
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
@@ -40,7 +42,7 @@ export default function App() {
       //const newTodos = Object.assign({}, todos, { [Date.now()]: { text, work: working } });  // target은 비어있는 오브젝트
       const newTodos = { ...todos, [Date.now()]: { text, working } }; // 위 코드와 같은 코드
       setTodos(newTodos);
-      await saveTodos(newTodos);
+      await saveTodos(newTodos);  // 휴대폰의 디스크(저장공간?)에 접근하는 것이기 때문에 await를 해주는게 좋음
       setText("");
     } catch (e) {
       console.log("입력 실패", e);
@@ -52,14 +54,27 @@ export default function App() {
   }, []);
   console.log("입력", todos);
 
+  const deleteTodo = (key) => {
+    Alert.alert("삭제", "삭제할까요?", [
+      { text: "취소" }, {
+        text: "삭제", onPress: () => {
+          const newTodos = { ...todos };
+          delete newTodos[key];
+          setTodos(newTodos);
+          saveTodos(newTodos);  // await 해도 되고 안해도 됨. await는 안하면 화면에서 빨리 삭제하고 나중에 상태 저장하는 것
+        }
+      }
+    ]);
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
       <View style={styles.header}>
-        <TouchableOpacity onPress={work}>
+        <TouchableOpacity onPress={work} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Text style={{ ...styles.btnText, color: working ? "white" : theme.gray }}>Work</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={travel}>
+        <TouchableOpacity onPress={travel} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Text style={{ ...styles.btnText, color: !working ? "white" : theme.gray }}>Travel</Text>
         </TouchableOpacity>
       </View>
@@ -77,6 +92,9 @@ export default function App() {
           todos[key].working === working ? (
             <View style={styles.todo} key={key}>
               <Text style={styles.todoText}>{todos[key].text}</Text>
+              <TouchableOpacity onPress={() => deleteTodo(key)}>
+                <Fontisto name="trash" size={18} color={theme.todoBg} />
+              </TouchableOpacity>
             </View>
           ) : null
         )}
@@ -110,6 +128,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   todo: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: theme.gray,
     marginBottom: 10,
     paddingVertical: 20,
